@@ -56,8 +56,9 @@ class FeedsFileProcessor extends FeedsProcessor {
    * Delete a series of files.
    */
   protected function entityDeleteMultiple($fids) {
-    foreach ($fids as $fid) {
-      file_delete($fid);
+    $files = file_load_multiple($fids);
+    foreach ($files as $file) {
+      file_delete($file);
     }
   }
 
