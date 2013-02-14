@@ -42,7 +42,9 @@ class FeedsFileProcessor extends FeedsProcessor {
    * Loads an existing file.
    */
   protected function entityLoad(FeedsSource $source, $fid) {
-    $node = file_load($fid, NULL, TRUE);
+    $file = file_load($fid);
+
+    return $file;
   }
 
   /**
@@ -88,6 +90,8 @@ class FeedsFileProcessor extends FeedsProcessor {
       $options[$type] = $bundle_info['label'];
     }
 
+    $form = parent::configForm($form_state);
+
     $form['file_type'] = array(
       '#type' => 'select',
       '#title' => t('File type'),
@@ -103,6 +107,13 @@ class FeedsFileProcessor extends FeedsProcessor {
       '#autocomplete_path' => 'user/autocomplete',
       '#default_value' => empty($author->name) ?  'anonymous' : check_plain($author->name),
     );
+
+    $form['update_existing']['#options'] = array(
+      FEEDS_SKIP_EXISTING => 'Do not update existing files',
+      FEEDS_REPLACE_EXISTING => 'Replace existing files',
+      FEEDS_UPDATE_EXISTING => 'Update existing files (slower than replacing them)',
+    );
+
     return $form;
   }
 
@@ -221,7 +232,7 @@ class FeedsFileProcessor extends FeedsProcessor {
           $fid = db_query("SELECT fid FROM {file_managed} WHERE fid = :fid", array(':fid' => $value))->fetchField();
           break;
         case 'filename':
-          $fid = db_query("SELECT filename FROM {file_managed} WHERE filename = :filename AND type = :type", array(':filename' => $value, ':type' => $this->config['file_type']))->fetchField();
+          $fid = db_query("SELECT fid FROM {file_managed} WHERE filename = :filename AND type = :type", array(':filename' => $value, ':type' => $this->config['file_type']))->fetchField();
           break;
         case 'uri':
           if (function_exists('media_parse_to_uri')) {
@@ -229,14 +240,14 @@ class FeedsFileProcessor extends FeedsProcessor {
             if (isset($uri)) {
               $file = file_uri_to_object($uri);
 
-              if ($file->fid) {
+              if (isset($file->fid)) {
                 $fid = $file->fid;
               }
             }
           }
 
           if (!$fid) {
-            $fid = db_query("SELECT uri FROM {file_managed} WHERE uri = :uri AND type = :type", array(':uri' => $value, ':type' => $this->config['file_type']))->fetchField();
+            $fid = db_query("SELECT fid FROM {file_managed} WHERE uri = :uri AND type = :type", array(':uri' => $value, ':type' => $this->config['file_type']))->fetchField();
           }
           break;
       }
